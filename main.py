@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('TkAgg') # addresses a bug in macos: libc++abi.dylib: terminating with uncaught exception
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 import seaborn as sns
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -17,20 +18,20 @@ current_palette = sns.color_palette()
 sns.set_palette("husl", 2)
 
 # import dataset
-df = pd.read_csv("assets/telecom-churn-small.csv")
-# print(df.head(3))
-# check if there is any null data
-# print(df.isnull().values.any())
+df = pd.read_csv("assets/telecom-churn.csv")
+# print(df.head(10))
+
+# fill missing data
+df['TotalCharges'] = df['TotalCharges'].replace(" ", 0).astype('float32')
+pd.options.display.max_rows = 500
+pd.options.display.max_columns = 5000
+pd.options.display.width = 100
+print(df.head(10))
+
 
 """
-# fill missing data
-# df['TotalCharges'] = df['TotalCharges'].replace(" ", 0).astype('float32')
-
-# display current churn ratio -- TARGET VARIABLE
+#  KERNEL DENSITY ESTIMATION PLOT 
 ax = sns.catplot(y="Churn", kind="count", data=df, height=2.6, aspect=2.5, orient='v')
-
-#  numerical features
-# TENURE is a customer's life (in months)
 def kdeplot(feature):
     plt.figure(figsize=(9, 4))
     plt.title("KDE for {}".format(feature))
@@ -41,9 +42,10 @@ kdeplot('MonthlyCharges')
 kdeplot('TotalCharges')
 """
 
+
+"""
 # categorical features
 ## binary features (Yes/No)
-### senior citizen
 def barplot_percentages(feature, orient='v', axis_name="percentage of customers"):
     ratios = pd.DataFrame()
     g = df.groupby(feature)["Churn"].value_counts().to_frame()
@@ -56,17 +58,53 @@ def barplot_percentages(feature, orient='v', axis_name="percentage of customers"
         ax = sns.barplot(x= axis_name, y=feature, hue='Churn', data=g, orient=orient)
         ax.set_xticklabels(['{:,.0%}'.format(x) for x in ax.get_xticks()])
     ax.plot()
-barplot_percentages("SeniorCitizen")
+# barplot_percentages("SeniorCitizen")
+# barplot_percentages("Partner")
+# barplot_percentages("gender")
+# barplot_percentages("Dependents")
+# barplot_percentages("Contract")
+"""
 
-## three unique values each
-
-## our unique values
-
-
-plt.figure(figsize=(12, 6))
+"""
+# correlation table (pearson)
+plt.figure(figsize=(12, 12))
 df.drop(['customerID'], axis=1, inplace=True)
 corr = df.apply(lambda x: pd.factorize(x)[0]).corr()
 ax = sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, linewidths=.2, cmap="YlGnBu")
+ax.tick_params(labelsize=8)
+"""
+
+# ML classifier
+params = {'random_state': 0, 'n_jobs': 4, 'n_estimators': 5000, 'max_depth': 8}
+df = pd.get_dummies(df)
+# Drop redundant columns (for features with two unique values)
+drop = ['Churn_Yes', 'Churn_No', 'gender_Female', 'Partner_No', 'Dependents_No', 'PhoneService_No', 'PaperlessBilling_No']
+x, y = df.drop(drop, axis = 1), df['Churn_Yes']
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+# Fit RandomForest Classifier
+clf = RandomForestClassifier(**params)
+clf = clf.fit(X_train, y_train)
+accuracy = clf.score(X_test, y_test)
+print("Model accuracy: {:.2f}".format(accuracy))
+# Plot features importances
+imp = pd.Series(data = clf.feature_importances_, index = X_test.columns).sort_values(ascending = False)
+imp = imp[imp>0.02]
+# print(imp)
+plt.figure(figsize=(10,12))
+plt.title("Feature importance")
+ax = sns.barplot(y=imp.index, x=imp.values, palette="husl", orient='h')
+ax.tick_params(labelsize=8)
+"""
+"""
 
 plt.show()
+
+"""
+# Use the forest's predict method on the test data
+predictions = clf.predict(test_features)
+# Calculate the absolute errors
+errors = abs(predictions - test_labels)
+# Print out the mean absolute error (mae)
+print('Mean Absolute Error:', round(np.mean(errors), 2), 'degrees.')
+"""
 
