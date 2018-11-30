@@ -86,6 +86,10 @@ clf = RandomForestClassifier(**params)
 clf = clf.fit(X_train, y_train)
 accuracy = clf.score(X_test, y_test)
 print("Model accuracy: {:.2f}".format(accuracy))
+"""
+"""
+
+"""
 # Plot features importances
 imp = pd.Series(data = clf.feature_importances_, index = X_test.columns).sort_values(ascending = False)
 imp = imp[imp>0.02]
@@ -95,13 +99,17 @@ plt.title("Feature importance")
 ax = sns.barplot(y=imp.index, x=imp.values, palette="husl", orient='h')
 ax.tick_params(labelsize=8)
 """
-"""
 
 plt.show()
 
-"""
 # Use the forest's predict method on the test data
-predictions = clf.predict(test_features)
+prediciton = clf.predict(X_test)
+file_name = "assets/telecom-churn-prediction.csv"
+prediction = pd.DataFrame(prediction, columns=['churn']).to_csv('prediction.csv')
+# prediciton.to_csv(file_name, sep='\t', encoding='utf-8')
+print("Done.")
+
+"""
 # Calculate the absolute errors
 errors = abs(predictions - test_labels)
 # Print out the mean absolute error (mae)
